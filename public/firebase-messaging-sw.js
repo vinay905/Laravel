@@ -1,11 +1,7 @@
-// Give the service worker access to Firebase Messaging.
-// Note that you can only use Firebase Messaging here. Other Firebase libraries
-// are not available in the service worker.importScripts('https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js');
+
 importScripts('https://www.gstatic.com/firebasejs/8.3.2/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.3.2/firebase-messaging.js');
-/*
-Initialize the Firebase app in the service worker by passing in the messagingSenderId.
-*/
+
 firebase.initializeApp({
     apiKey: "AIzaSyB9FzIUo3bBKunVLVqi1o0M9gVqeX_VoHo",
   authDomain: "laravelpushnotification-78b76.firebaseapp.com",
@@ -16,18 +12,30 @@ firebase.initializeApp({
   measurementId: "G-TSQ5CB26NT"
 });
  
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
 const messaging = firebase.messaging();
 messaging.setBackgroundMessageHandler(function (payload) {
     console.log("Message received.", payload);
-    const title = "Hello world is awesome";
+    const title = "You have a notification";
     const options = {
-        body: "Your notificaiton message .",
+        body: "Please check notificaiton message .",
         icon: "/firebase-logo.png",
     };
     return self.registration.showNotification(
         title,
         options,
     );
-});
+    });
+    self.addEventListener('notificationclick', function(event) {
+        // console.log('jknjnjknkj');
+        const notification = event.notification;
+        const action = event.action;
+        if (action === 'open_url') {
+            // const url =notification.data.url;
+            const url='https://google.com';
+            event.waitUntil(
+                clients.openWindow(event)
+            );
+        }
+        notification.close();
+    });
+    

@@ -8,7 +8,8 @@
     <title></title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"crossorigin="anonymous">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"crossorigin="anonymous">
 </head>
 
 <body>
@@ -68,7 +69,7 @@
     <div class="text-center">
         <a class="m-auto btn btn-danger btn-sm" href="{{ route('logout') }}">Logout</a>
     </div>
-    <button class="btn btn-danger btn-flat">Allow
+    <button onclick="startFCM()" class="btn btn-danger btn-flat">Allow
     </button>
     <form action="{{ route('pushnotification') }}" method="POST">@csrf
         <input type="text" value="Vinay SINGH" name="body">
@@ -82,6 +83,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.3.2/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 <script>
+
+navigator.serviceWorker.register('firebase-messaging-sw.js');
     var firebaseConfig = {
         apiKey: "AIzaSyB9FzIUo3bBKunVLVqi1o0M9gVqeX_VoHo",
         authDomain: "laravelpushnotification-78b76.firebaseapp.com",
@@ -126,17 +129,26 @@
     }
 
     messaging.onMessage(function(payload) {
-                    console.log(payload);
-                    console.log(payload.notification.body);
-                    const title = payload.notification.title;
-                    const options = {
-                        body: payload.notification.body,
-                        image: payload.notification.image,
-                    };
-                    new Notification(title, options);
-                });
+        console.log(payload);
+        console.log(payload.notification.body);
+        const title = payload.notification.title;
+        const options = {
+            body: payload.notification.body,
+            image: payload.notification.image,
+            actions:payload.notification.actions,
+        };
+        new Notification(title, options);
+});
+self.addEventListener('notificationclick', function(event) {
+    const notification = event.notification;
+    const action = event.action;
+    if (action === 'open_url') {
+        const url = event.notification.data.url;
+        event.waitUntil(
+            clients.openWindow(url)
+        );
+    }
+    notification.close();
+});
 
-    $(document).ready(function() {
-        startFCM();
-    });
 </script>

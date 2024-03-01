@@ -245,37 +245,79 @@ class RegisterController extends Controller
 
     public function sendnotification(Request $request)
     {
-        $url = 'https://fcm.googleapis.com/fcm/send';
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken) {
+            die('Failed to obtain access token');
+        }
         $fcmtoken = Student::whereNotNull('device_token')->pluck('device_token')->all();
         $image = 'https://developercodez.com/public/ckfinder/userfiles/files/image-20230615002957-3.png';
-        $serverKey = 'AAAAqKAgXYQ:APA91bGOVTysF1xWRak0ueHA0PH5DOoDwDf4O7_ddz2evqlP3YvvbnaAgkbDbbwifnfx4ULf2Nr9qoZ9JR7J-H_zvsNBMMoJ6M-Iv-_1eWN-E-Jv5vVSHu3wtPCoYyCUWmKF6TSzUelN';
-        $data = [
-            'registration_ids' => $fcmtoken,
-            'notification' => [
-                'title' => $request->title,
-                'body' => $request->body,
-                'image' => $image,
-            ]
-        ];
-        $notify_data = json_encode($data);
-        $headers = [
-            'Authorization:key=' . $serverKey,
-            'Content-Type:application/json',
-        ];
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $notify_data);
-        $result = curl_exec($ch);
-        if ($result == FALSE) {
-            die('curl failed' . curl_error($ch));
+        $url = 'https://fcm.googleapis.com/v1/projects/laravelpushnotification-78b76/messages:send';
+
+        foreach ($fcmtoken as $token) {
+            // Construct the notification payload with action buttons
+            $data = [
+                "message" => [
+                    "token" => $token,
+                    "webpush" => [
+                        "notification" => [
+                            "title" => $request->title,
+                            "body" => $request->body,
+                            "image" => $image,
+                            "actions" => [
+                                [
+                                    "action" => "open_url",
+                                    "title" => "Open Website",
+                                ]
+                                ],
+                            "data" => [
+                                    "url" => "https://youtube.com"
+                                ]
+                        ],
+                    ]
+                ]
+            ];
+
+            $notify_data = json_encode($data);
+            $headers = [
+                'Authorization: Bearer ' . $accessToken,
+                'Content-Type: application/json',
+            ];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $notify_data);
+            $result = curl_exec($ch);
+
+            if ($result === false) {
+                die('curl failed' . curl_error($ch));
+            } else {
+                // return view('welcome');
+            }
+
+            curl_close($ch);
         }
-        curl_close($ch);
-        dd($result);
+        // return redirect('/showusers');
+
+    }
+    private function getAccessToken()
+    {
+        $serviceAccountFile = public_path('service-account.json');
+        $serviceAccountJson = json_decode(file_get_contents($serviceAccountFile), true);
+        $client = new \Google_Client();
+        $client->setAuthConfig($serviceAccountJson);
+        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+        // Get access token
+        $accessToken = $client->fetchAccessTokenWithAssertion();
+        if (isset($accessToken['access_token'])) {
+            return $accessToken['access_token'];
+        } else {
+            return null;
+        }
     }
 }
